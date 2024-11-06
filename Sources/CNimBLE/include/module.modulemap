@@ -1,0 +1,4 @@
+module CNimBLE {
+  header "CNimBLE.h"
+  export *
+}
