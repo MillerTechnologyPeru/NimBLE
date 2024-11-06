@@ -33,6 +33,10 @@ let package = Package(
                 .product(
                     name: "BluetoothGAP",
                     package: "Bluetooth"
+                ),
+                .product(
+                    name: "BluetoothHCI",
+                    package: "Bluetooth"
                 )
             ],
             swiftSettings: [
