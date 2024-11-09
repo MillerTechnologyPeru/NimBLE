@@ -13,6 +13,10 @@ let package = Package(
         .library(
             name: "NimBLE",
             targets: ["NimBLE"]
+        ),
+        .executable(
+            name: "NimBLEDemo",
+            targets: ["NimBLEDemo"]
         )
     ],
     dependencies: [
@@ -35,6 +39,10 @@ let package = Package(
                     package: "Bluetooth"
                 ),
                 .product(
+                    name: "BluetoothGATT",
+                    package: "Bluetooth"
+                ),
+                .product(
                     name: "BluetoothHCI",
                     package: "Bluetooth"
                 )
@@ -45,6 +53,12 @@ let package = Package(
         ),
         .target(
             name: "CNimBLE"
+        ),
+        .executableTarget(
+            name: "NimBLEDemo",
+            dependencies: [
+                "NimBLE"
+            ]
         ),
         .testTarget(
             name: "NimBLETests",
