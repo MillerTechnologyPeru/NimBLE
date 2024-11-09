@@ -20,5 +20,6 @@ import CNimBLE
       #expect(nimbleValue.u16.value == integer)
       #expect("0x" + uuid.rawValue.lowercased() == nimbleValue.description)
       #expect(try ble_uuid_any_t(uuid.rawValue).description == nimbleValue.description)
+      #expect(nimbleValue.dataLength == 2)
   }
 }
