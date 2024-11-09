@@ -10,7 +10,7 @@ import BluetoothGAP
 import BluetoothHCI
 import CNimBLE
 
-public struct HostController: ~Copyable {
+public extension NimBLE {
     
     func address(
         type: LowEnergyAddressType = .public
