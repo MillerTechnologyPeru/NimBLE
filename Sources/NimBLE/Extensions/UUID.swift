@@ -20,6 +20,62 @@ internal extension ble_uuid_any_t {
             self.init(u128: .init(uuid: value))
         }
     }
+    
+    init(_ string: String) throws(NimBLEError) {
+        self.init()
+        try withUnsafeMutablePointer(to: &self) { uuidBuffer in
+            string.withCString { cString in
+                ble_uuid_from_str(uuidBuffer, cString)
+            }
+        }.throwsError()
+    }
+    
+    init?<C>(data: C) where C: Collection, C.Element == UInt8 {
+        guard let value = data.withContiguousStorageIfAvailable({
+            $0.withUnsafeBytes {
+                try? ble_uuid_any_t(buffer: $0)
+            }
+        }), let unwrapped = value else { return nil }
+        self = unwrapped
+    }
+    
+    init(buffer: UnsafeRawBufferPointer) throws(NimBLEError) {
+        self.init()
+        try ble_uuid_init_from_buf(
+            &self,
+            buffer.baseAddress,
+            buffer.count
+        ).throwsError()
+    }
+}
+
+extension ble_uuid_any_t: @retroactive CustomStringConvertible {
+    
+    public var description: String {
+        withUnsafeBytes(of: self) { uuidBuffer in
+            var cString = [CChar](repeating: 0, count: 37)
+            ble_uuid_to_str(
+                uuidBuffer.assumingMemoryBound(to: ble_uuid_t.self).baseAddress,
+                &cString
+            )
+            return String(cString: &cString)
+        }
+    }
+}
+
+extension ble_uuid_any_t: @retroactive Equatable {
+    
+    public static func == (lhs: ble_uuid_any_t, rhs: ble_uuid_any_t) -> Bool {
+        withUnsafeBytes(of: lhs) {
+            $0.withMemoryRebound(to: ble_uuid_t.self) { lhsPointer in
+                withUnsafeBytes(of: rhs) {
+                    $0.withMemoryRebound(to: ble_uuid_t.self) { rhsPointer in
+                        ble_uuid_cmp(lhsPointer.baseAddress, rhsPointer.baseAddress) == 0
+                    }
+                }
+            }
+        }
+    }
 }
 
 internal extension ble_uuid16_t {
