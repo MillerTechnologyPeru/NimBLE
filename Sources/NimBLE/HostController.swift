@@ -12,7 +12,18 @@ import CNimBLE
 
 public extension NimBLE {
     
-    func address(
+    var hostController: HostController { HostController(context: context) }
+}
+
+public struct HostController {
+    
+    internal let context: UnsafeMutablePointer<NimBLE.Context>
+    
+    public var isEnabled: Bool {
+        ble_hs_is_enabled() == 1
+    }
+    
+    public func address(
         type: LowEnergyAddressType = .public
     ) throws(NimBLEError) -> BluetoothAddress {
         var address = BluetoothAddress.zero
