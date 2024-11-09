@@ -653,7 +653,14 @@ err:
 }
 #endif
 
-#if MYNEWT_VAL(BLE_SOCK_USE_LINUX_BLUE)
+#if __APPLE__
+static int
+ble_hci_sock_config(void)
+{
+    printf("Cannot open an HCI socket on macOS.");
+    return BLE_ERR_HW_FAIL;
+}
+#elif MYNEWT_VAL(BLE_SOCK_USE_LINUX_BLUE)
 static int
 ble_hci_sock_config(void)
 {
