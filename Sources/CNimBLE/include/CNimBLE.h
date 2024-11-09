@@ -14,3 +14,4 @@
 #include "nimble/transport.h"
 #include "host/ble_hs.h"
 #include "host/ble_gap.h"
+#include "host/ble_gatt.h"
