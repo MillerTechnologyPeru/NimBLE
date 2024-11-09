@@ -47,6 +47,11 @@ internal extension ble_uuid_any_t {
             buffer.count
         ).throwsError()
     }
+    
+    init(_ pointer: UnsafePointer<ble_uuid_t>) {
+        self.init()
+        ble_uuid_copy(&self, pointer)
+    }
 }
 
 extension ble_uuid_any_t: @retroactive CustomStringConvertible {
@@ -78,6 +83,18 @@ extension ble_uuid_any_t: @retroactive Equatable {
     }
 }
 
+extension ble_uuid_any_t { //: @retroactive DataConvertible {
+    
+    public var dataLength: Int {
+        let value = withUnsafeBytes(of: self) {
+            $0.withMemoryRebound(to: ble_uuid_t.self) {
+                ble_uuid_length($0.baseAddress)
+            }
+        }
+        return Int(value)
+    }
+}
+
 internal extension ble_uuid16_t {
     
     init(uuid: UInt16) {
@@ -98,3 +115,4 @@ internal extension ble_uuid128_t {
         self.init(u: .init(type: UInt8(BLE_UUID_TYPE_128)), value: uuid.bytes)
     }
 }
+

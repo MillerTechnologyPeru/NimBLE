@@ -42,16 +42,25 @@ public struct GATTServer {
     /// Attempts to add the specified service to the GATT database.
     public func add(services: [GATTAttribute.Service]) throws(NimBLEError) {
         var cServices = [ble_gatt_svc_def].init(repeating: .init(), count: services.count + 1)
+        var buffers = [[UInt8]]()
         // TODO: Free memory
         for (serviceIndex, service) in services.enumerated() {
             cServices[serviceIndex].type = service.primary ? UInt8(BLE_GATT_SVC_TYPE_PRIMARY) : UInt8(BLE_GATT_SVC_TYPE_SECONDARY)
-            var uuidPointer = UnsafeMutablePointer<ble_uuid16_t>.allocate(capacity: 1)
-            // TODO: Free memory
-            uuidPointer.pointee = ble_uuid16_t(uuid: 0x001)
-            cServices[serviceIndex].uuid = .init(OpaquePointer(uuidPointer))
+            let serviceUUID = ble_uuid_any_t(service.uuid)
+            withUnsafeBytes(of: serviceUUID) {
+                let buffer = [UInt8]($0)
+                buffers.append(buffer)
+                buffer.withUnsafeBytes {
+                    cServices[serviceIndex].uuid = .init(OpaquePointer($0.baseAddress))
+                }
+            }
+            assert(ble_uuid_any_t(cServices[serviceIndex].uuid) == serviceUUID)
+            //assert(serviceUUID.dataLength == service.uuid.dataLength)
         }
-        try ble_gatts_count_cfg(cServices).throwsError()
-        try ble_gatts_add_svcs(cServices).throwsError()
+        try withExtendedLifetime(buffers) { _ throws(NimBLEError) -> () in
+            try ble_gatts_count_cfg(cServices).throwsError()
+            try ble_gatts_add_svcs(cServices).throwsError()
+        }
     }
     
     /// Removes the service with the specified handle.
