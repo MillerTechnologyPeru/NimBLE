@@ -16,16 +16,16 @@ import CNimBLE
 struct GATTServerTests {
     
   @Test func addServices() throws {
-      let bluetooth = NimBLE(initializePort: false)
+      let bluetooth = NimBLE()
       let server = bluetooth.server
-      let service = GATTAttribute.Service(
+      let service = GATTAttribute<[UInt8]>.Service(
         uuid: .bit16(0x180A),
-        primary: true,
+        isPrimary: true,
         characteristics: []
       )
       try server.add(services: [service])
-      //try ble_gatts_start().throwsError()
+      try ble_gatts_start().throwsError()
       server.dump()
-      
+      try ble_gatts_reset().throwsError()
   }
 }
