@@ -175,12 +175,12 @@ timer_delete(timer_t tim)
 }
 
 // https://lists.apple.com/archives/xcode-users/2007/Apr/msg00331.html
-int pthread_mutex_timedlock(pthread_mutex_t *restrict mutex, const struct timespec *restrict abs_timeout)
+static inline int pthread_mutex_timedlock(pthread_mutex_t * mutex, const struct timespec * abs_timeout)
 {
     int result;
     do
     {
-        result = pthread_mutex_trylock(&mutex);
+        result = pthread_mutex_trylock(mutex);
         if (result == EBUSY)
         {
             struct timespec ts;

@@ -657,8 +657,7 @@ err:
 static int
 ble_hci_sock_config(void)
 {
-    printf("Cannot open an HCI socket on macOS.");
-    return BLE_ERR_HW_FAIL;
+    return 0;
 }
 #elif MYNEWT_VAL(BLE_SOCK_USE_LINUX_BLUE)
 static int

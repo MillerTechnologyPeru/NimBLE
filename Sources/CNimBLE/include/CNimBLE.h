@@ -16,6 +16,7 @@
 #include "host/ble_hs.h"
 #include "host/ble_gap.h"
 #include "host/ble_gatt.h"
+#include "host/ble_l2cap.h"
 
 // Private functions
 int ble_uuid_length(const ble_uuid_t *uuid);
