@@ -18,6 +18,10 @@ public extension NimBLE {
 /// NimBLE GATT Server interface.
 public struct GATTServer {
     
+    nonisolated(unsafe) private static var services = [ble_gatt_svc_def]()
+    
+    nonisolated(unsafe) private static var buffers = [[UInt8]]()
+    
     // MARK: - Properties
     
     internal let context: UnsafeMutablePointer<NimBLE.Context>
@@ -40,12 +44,12 @@ public struct GATTServer {
     }
     
     /// Attempts to add the specified service to the GATT database.
-    public func add(services: [GATTAttribute.Service]) throws(NimBLEError) {
+    public func add(services: [GATTAttribute<[UInt8]>.Service]) throws(NimBLEError) {
         var cServices = [ble_gatt_svc_def].init(repeating: .init(), count: services.count + 1)
         var buffers = [[UInt8]]()
         // TODO: Free memory
         for (serviceIndex, service) in services.enumerated() {
-            cServices[serviceIndex].type = service.primary ? UInt8(BLE_GATT_SVC_TYPE_PRIMARY) : UInt8(BLE_GATT_SVC_TYPE_SECONDARY)
+            cServices[serviceIndex].type = service.isPrimary ? UInt8(BLE_GATT_SVC_TYPE_PRIMARY) : UInt8(BLE_GATT_SVC_TYPE_SECONDARY)
             let serviceUUID = ble_uuid_any_t(service.uuid)
             withUnsafeBytes(of: serviceUUID) {
                 let buffer = [UInt8]($0)
@@ -61,6 +65,9 @@ public struct GATTServer {
             try ble_gatts_count_cfg(cServices).throwsError()
             try ble_gatts_add_svcs(cServices).throwsError()
         }
+        //try ble_gatts_start().throwsError()
+        Self.services = cServices
+        Self.buffers = buffers
     }
     
     /// Removes the service with the specified handle.
