@@ -37,23 +37,24 @@ public struct NimBLE: ~Copyable {
         nimble_port_run()
     }
     
+    public func run(while body: () -> (Bool)) {
+        let time = ble_npl_time_t(BLE_NPL_TIME_FOREVER)
+        let dflt = nimble_port_get_dflt_eventq()
+        while body() {
+            let event = ble_npl_eventq_get(dflt, time)
+            ble_npl_event_run(event)
+        }
+    }
 }
 
 internal extension NimBLE {
     
     struct Context {
         
-        var advertisment = LowEnergyAdvertisingData()
+        var gap = GAP.Context()
         
-        var scanResponse = LowEnergyAdvertisingData()
+        var gattServer = GATTServer.Context()
         
-        /// Callback to handle GATT read requests.
-        //public var willRead: ((GATTReadRequest<Central>) -> ATTError?)?
         
-        /// Callback to handle GATT write requests.
-        //public var willWrite: ((GATTWriteRequest<Central>) -> ATTError?)?
-        
-        /// Callback to handle post-write actions for GATT write requests.
-        //public var didWrite: ((GATTWriteConfirmation<Central>) -> ())?
     }
 }

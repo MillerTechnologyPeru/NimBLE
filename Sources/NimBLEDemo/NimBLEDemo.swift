@@ -28,8 +28,16 @@ struct NimBLEDemo {
             uuid: .bit16(0x180A),
             isPrimary: true,
             characteristics: [
-                
-            ]
+              .init(
+                  uuid: .manufacturerNameString,
+                  value: Array("Test Inc.".utf8),
+                  permissions: [.read],
+                  properties: [.read],
+                  descriptors: [
+                      .init(GATTUserDescription(rawValue: "Manufacturer Name String"), permissions: .read)
+                  ]
+              )
+          ]
         )
         try server.add(services: [service])
         try server.start()

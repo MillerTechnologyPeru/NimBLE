@@ -5,6 +5,7 @@
 //  Created by Alsey Coleman Miller on 11/9/24.
 //
 
+import Foundation
 import Testing
 import Bluetooth
 import BluetoothGATT
@@ -21,11 +22,20 @@ struct GATTServerTests {
       let service = GATTAttribute<[UInt8]>.Service(
         uuid: .bit16(0x180A),
         isPrimary: true,
-        characteristics: []
+        characteristics: [
+            .init(
+                uuid: .manufacturerNameString,
+                value: Array("Test Inc.".utf8),
+                permissions: [.read],
+                properties: [.read],
+                descriptors: [
+                    .init(GATTUserDescription(rawValue: "Manufacturer Name String"), permissions: .read)
+                ]
+            )
+        ]
       )
       try server.add(services: [service])
-      try ble_gatts_start().throwsError()
+      try server.start()
       server.dump()
-      try ble_gatts_reset().throwsError()
   }
 }

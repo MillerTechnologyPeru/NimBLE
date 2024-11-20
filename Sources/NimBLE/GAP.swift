@@ -20,6 +20,13 @@ public extension NimBLE {
 /// NimBLE GAP interface.
 public struct GAP {
     
+    internal struct Context {
+        
+        var advertisment = LowEnergyAdvertisingData()
+        
+        var scanResponse = LowEnergyAdvertisingData()
+    }
+    
     internal let context: UnsafeMutablePointer<NimBLE.Context>
     
     /// Indicates whether an advertisement procedure is currently in progress.
@@ -47,25 +54,25 @@ public struct GAP {
     }
     
     public var advertisementData: LowEnergyAdvertisingData {
-        context.pointee.advertisment
+        context.pointee.gap.advertisment
     }
     
     /// Configures the data to include in subsequent advertisements.
     public func setAdvertisement(_ data: LowEnergyAdvertisingData) throws(NimBLEError) {
-        context.pointee.advertisment = data
-        try context.pointee.advertisment.withUnsafePointer {
+        context.pointee.gap.advertisment = data
+        try context.pointee.gap.advertisment.withUnsafePointer {
             ble_gap_adv_set_data($0, Int32(data.length))
         }.throwsError()
     }
     
     public var scanResponse: LowEnergyAdvertisingData {
-        context.pointee.scanResponse
+        context.pointee.gap.scanResponse
     }
     
     /// Configures the data to include in subsequent scan responses.
     public func setScanResponse(_ data: LowEnergyAdvertisingData) throws(NimBLEError) {
-        context.pointee.scanResponse = data
-        try context.pointee.scanResponse.withUnsafePointer {
+        context.pointee.gap.scanResponse = data
+        try context.pointee.gap.scanResponse.withUnsafePointer {
             ble_gap_adv_rsp_set_data($0, Int32(data.length))
         }.throwsError()
     }
