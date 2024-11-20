@@ -60,7 +60,7 @@ public extension NimBLE.L2CAP {
             
             let handle: UInt16
             
-            var channel: UnsafeMutablePointer<ble_l2cap_chan>
+            var channel: OpaquePointer
         }
         
         internal var context: UnsafeMutablePointer<Context>
