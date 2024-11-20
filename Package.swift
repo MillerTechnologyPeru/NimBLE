@@ -23,6 +23,10 @@ let package = Package(
         .package(
             url: "https://github.com/PureSwift/Bluetooth.git",
             branch: "master"
+        ),
+        .package(
+            url: "https://github.com/PureSwift/GATT.git",
+            branch: "master"
         )
     ],
     targets: [
@@ -45,6 +49,10 @@ let package = Package(
                 .product(
                     name: "BluetoothHCI",
                     package: "Bluetooth"
+                ),
+                .product(
+                    name: "GATT",
+                    package: "GATT"
                 )
             ],
             swiftSettings: [
