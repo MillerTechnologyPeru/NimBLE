@@ -10,6 +10,13 @@ import BluetoothGAP
 import BluetoothHCI
 import CNimBLE
 
+public extension NimBLE {
+    
+    var gap: GAP {
+        GAP(context: context)
+    }
+}
+
 /// NimBLE GAP interface.
 public struct GAP {
     
@@ -39,16 +46,26 @@ public struct GAP {
         try ble_gap_adv_stop().throwsError()
     }
     
+    public var advertisementData: LowEnergyAdvertisingData {
+        context.pointee.advertisment
+    }
+    
     /// Configures the data to include in subsequent advertisements.
     public func setAdvertisement(_ data: LowEnergyAdvertisingData) throws(NimBLEError) {
-        try data.withUnsafePointer {
+        context.pointee.advertisment = data
+        try context.pointee.advertisment.withUnsafePointer {
             ble_gap_adv_set_data($0, Int32(data.length))
         }.throwsError()
     }
     
+    public var scanResponse: LowEnergyAdvertisingData {
+        context.pointee.scanResponse
+    }
+    
     /// Configures the data to include in subsequent scan responses.
     public func setScanResponse(_ data: LowEnergyAdvertisingData) throws(NimBLEError) {
-        try data.withUnsafePointer {
+        context.pointee.scanResponse = data
+        try context.pointee.scanResponse.withUnsafePointer {
             ble_gap_adv_rsp_set_data($0, Int32(data.length))
         }.throwsError()
     }

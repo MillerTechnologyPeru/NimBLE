@@ -34,7 +34,7 @@ public extension NimBLE.L2CAP {
             context.initialize(to: Context())
             // create socket
             let contextPointer = UnsafeMutableRawPointer(self.context)
-            ble_l2cap_create_server(psm, mtu, _ble_l2cap_event_server, contextPointer)//.throwsError()
+            //ble_l2cap_create_server(psm, mtu, _ble_l2cap_event_server, contextPointer)//.throwsError()
         }
         
         deinit {
@@ -60,7 +60,7 @@ public extension NimBLE.L2CAP {
             
             let handle: UInt16
             
-            var channel: OpaquePointer
+            var channel: UnsafeMutablePointer<ble_l2cap_chan>
         }
         
         internal var context: UnsafeMutablePointer<Context>

@@ -19,7 +19,7 @@ struct NimBLEDemo {
 
         // get address
         let hostController = bluetooth.hostController
-        while hostController.isEnabled {
+        while hostController.isEnabled == false {
             Thread.sleep(forTimeInterval: 1.0)
         }
         

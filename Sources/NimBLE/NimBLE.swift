@@ -27,19 +27,25 @@ public struct NimBLE: ~Copyable {
         context.pointee = Context()
     }
     
+    deinit {
+        context.deinitialize(count: 1)
+        context.deallocate()
+    }
+    
     /// Runs the event loop
     public func run() {
         nimble_port_run()
     }
     
-    deinit {
-        context.deallocate()
-    }
 }
 
 internal extension NimBLE {
     
     struct Context {
+        
+        var advertisment = LowEnergyAdvertisingData()
+        
+        var scanResponse = LowEnergyAdvertisingData()
         
         /// Callback to handle GATT read requests.
         //public var willRead: ((GATTReadRequest<Central>) -> ATTError?)?
