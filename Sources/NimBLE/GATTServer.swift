@@ -24,7 +24,7 @@ public struct GATTServer {
         
         var servicesBuffer = [ble_gatt_svc_def]()
         
-        var characteristicsBuffers = [Int: [ble_gatt_chr_def]]()
+        var characteristicsBuffers = [[ble_gatt_chr_def]]()
         
         var buffers = [[UInt8]]()
         
@@ -70,7 +70,7 @@ public struct GATTServer {
     public func set(services: [GATTAttribute<[UInt8]>.Service]) throws(NimBLEError) -> [(UInt16, [UInt16])] {
         removeAllServices()
         var cServices = [ble_gatt_svc_def].init(repeating: .init(), count: services.count + 1)
-        var characteristicsBuffers = [Int: [ble_gatt_chr_def]]()
+        var characteristicsBuffers = [[ble_gatt_chr_def]].init(repeating: [], count: services.count)
         var buffers = [[UInt8]]()
         for (serviceIndex, service) in services.enumerated() {
             // set type
@@ -125,7 +125,7 @@ public struct GATTServer {
         serviceHandles.reserveCapacity(services.count)
         for (serviceIndex, service) in services.enumerated() {
             for (characteristicIndex, characteristic) in service.characteristics.enumerated() {
-                characteristicsBuffers[serviceIndex, default: []][characteristicIndex].val_handle
+                characteristicsBuffers[serviceIndex][characteristicIndex].val_handle
             }
         }
         return serviceHandles
@@ -155,7 +155,7 @@ internal extension GATTServer.Context {
     func characteristic(for handle: UInt16) -> GATTAttribute<[UInt8]>.Characteristic? {
         for (serviceIndex, service) in services.enumerated() {
             for (characteristicIndex, characteristic) in service.characteristics.enumerated() {
-                guard characteristicsBuffers[serviceIndex, default: []][characteristicIndex].val_handle.pointee == handle else {
+                guard characteristicsBuffers[serviceIndex][characteristicIndex].val_handle.pointee == handle else {
                     continue
                 }
                 return characteristic
@@ -167,7 +167,7 @@ internal extension GATTServer.Context {
     mutating func didWriteCharacteristic(_ value: [UInt8], for handle: UInt16) -> Bool {
         for (serviceIndex, service) in services.enumerated() {
             for (characteristicIndex, _) in service.characteristics.enumerated() {
-                guard characteristicsBuffers[serviceIndex, default: []][characteristicIndex].val_handle.pointee == handle else {
+                guard characteristicsBuffers[serviceIndex][characteristicIndex].val_handle.pointee == handle else {
                     continue
                 }
                 services[serviceIndex].characteristics[characteristicIndex].value = value
@@ -205,24 +205,4 @@ internal func _ble_gatt_access(
         break
     }
     return BLE_ATT_ERR_UNLIKELY
-}
-
-internal extension GATTServer {
-    
-    struct CharacteristicAccessContext {
-        
-        let service: Int
-        
-        let characteristic: Int
-        
-        let context: UnsafeMutablePointer<NimBLE.Context>
-        
-        func read() -> [UInt8] {
-            context.pointee.gattServer.services[service].characteristics[characteristic].value
-        }
-        
-        func write(_ newValue: [UInt8]) {
-            context.pointee.gattServer.services[service].characteristics[characteristic].value = newValue
-        }
-    }
 }
