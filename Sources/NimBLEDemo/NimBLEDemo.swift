@@ -39,8 +39,7 @@ struct NimBLEDemo {
               )
           ]
         )
-        try server.add(services: [service])
-        try server.start()
+        try server.set(services: [service])
         server.dump()
         
         let address = try hostController.address()
