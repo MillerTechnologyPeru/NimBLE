@@ -35,6 +35,10 @@ struct GATTServerTests {
         ]
       )
       try server.set(services: [service])
+      defer {
+          server.removeAllServices()
+      }
       server.dump()
+      
   }
 }
