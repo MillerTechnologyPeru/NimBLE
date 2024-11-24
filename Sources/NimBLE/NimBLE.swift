@@ -32,6 +32,11 @@ public struct NimBLE: ~Copyable {
         context.deallocate()
     }
     
+    public var log: (@Sendable (String) -> ())? {
+        get { context.pointee.log }
+        set { context.pointee.log = newValue }
+    }
+    
     /// Runs the event loop
     public func run() {
         nimble_port_run()
@@ -50,6 +55,8 @@ public struct NimBLE: ~Copyable {
 internal extension NimBLE {
     
     struct Context {
+        
+        var log: (@Sendable (String) -> ())?
         
         var gap = GAP.Context()
         

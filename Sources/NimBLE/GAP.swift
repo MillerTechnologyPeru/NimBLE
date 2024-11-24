@@ -21,7 +21,7 @@ public extension NimBLE {
 public struct GAP {
     
     internal struct Context {
-        
+                
         var advertisment = LowEnergyAdvertisingData()
         
         var scanResponse = LowEnergyAdvertisingData()
@@ -79,8 +79,17 @@ public struct GAP {
 }
 
 internal func _gap_callback(event: UnsafeMutablePointer<ble_gap_event>?, context contextPointer: UnsafeMutableRawPointer?) -> Int32 {
-    guard let context = contextPointer?.assumingMemoryBound(to: NimBLE.Context.self) else {
+    guard let context = contextPointer?.assumingMemoryBound(to: NimBLE.Context.self),
+        let event else {
         return 0
+    }
+    let log = context.pointee.log
+    switch Int32(event.pointee.type) {
+    case BLE_GAP_EVENT_CONNECT:
+        let handle = event.pointee.connect.conn_handle
+        log?("Connected - Handle \(handle)")
+    default:
+        break
     }
     
     return 0
