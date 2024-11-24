@@ -202,7 +202,8 @@ internal func _ble_gatt_access(
             assertionFailure()
             return BLE_ATT_ERR_UNLIKELY
         }
-        log?("Read characteristic \(characteristic.uuid) - Handle \(attributeHandle)")
+        let address = (try? GAP(context: context).connection(for: connectionHandle)).map { BluetoothAddress(bytes: $0.peer_ota_addr.val) } ?? .zero
+        log?("[\(address)] Read characteristic \(characteristic.uuid) - Handle \(attributeHandle.toHexadecimal())")
         // respond with memory
         var memoryBuffer = MemoryBuffer(accessContext.pointee.om, retain: false)
         memoryBuffer.append(contentsOf: characteristic.value)
@@ -212,7 +213,8 @@ internal func _ble_gatt_access(
             assertionFailure()
             return BLE_ATT_ERR_UNLIKELY
         }
-        log?("Write characteristic \(characteristic.uuid) - Handle \(attributeHandle)")
+        let address = (try? GAP(context: context).connection(for: connectionHandle)).map { BluetoothAddress(bytes: $0.peer_ota_addr.val) } ?? .zero
+        log?("[\(address)] Write characteristic \(characteristic.uuid) - Handle \(attributeHandle.toHexadecimal())")
         
         break
     default:
