@@ -28,6 +28,8 @@ public struct GATTServer {
         
         var buffers = [[UInt8]]()
         
+        var characteristicValueHandles = [[UInt16]]()
+        
         /// Callback to handle GATT read requests.
         var willRead: ((GATTReadRequest<Central, [UInt8]>) -> ATTError?)?
         
@@ -128,6 +130,7 @@ public struct GATTServer {
         self.context.pointee.gattServer.characteristicsBuffers = characteristicsBuffers
         self.context.pointee.gattServer.buffers = buffers
         self.context.pointee.gattServer.services = services
+        self.context.pointee.gattServer.characteristicValueHandles = valueHandles
         // get handles
         return valueHandles
     }
@@ -140,10 +143,11 @@ public struct GATTServer {
     /// Clears the local GATT database.
     public func removeAllServices() {
         ble_gatts_reset()
-        self.context.pointee.gattServer.services.removeAll()
+        self.context.pointee.gattServer.services.removeAll(keepingCapacity: false)
         self.context.pointee.gattServer.buffers.removeAll(keepingCapacity: false)
         self.context.pointee.gattServer.services.removeAll(keepingCapacity: false)
         self.context.pointee.gattServer.characteristicsBuffers.removeAll(keepingCapacity: false)
+        self.context.pointee.gattServer.characteristicValueHandles.removeAll(keepingCapacity: false)
     }
     
     public func dump() {
@@ -205,5 +209,5 @@ internal func _ble_gatt_access(
     default:
         break
     }
-    return BLE_ATT_ERR_UNLIKELY
+    return 0
 }

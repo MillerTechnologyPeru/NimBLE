@@ -40,5 +40,6 @@ struct GATTServerTests {
       }
       server.dump()
       #expect(handles[0][0] == 0x03)
+      #expect(server.context.pointee.gattServer.characteristic(for: 0x03)?.uuid == .manufacturerNameString)
   }
 }
