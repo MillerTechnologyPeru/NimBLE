@@ -34,11 +34,11 @@ struct GATTServerTests {
             )
         ]
       )
-      try server.set(services: [service])
+      let handles = try server.set(services: [service])
       defer {
           server.removeAllServices()
       }
       server.dump()
-      
+      #expect(handles[0][0] == 0x03)
   }
 }
