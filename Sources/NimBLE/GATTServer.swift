@@ -67,11 +67,12 @@ public struct GATTServer {
     }
     
     /// Attempts to add the specified service to the GATT database.
-    public func set(services: [GATTAttribute<[UInt8]>.Service]) throws(NimBLEError) -> [(UInt16, [UInt16])] {
+    public func set(services: [GATTAttribute<[UInt8]>.Service]) throws(NimBLEError) -> [[UInt16]] {
         removeAllServices()
         var cServices = [ble_gatt_svc_def].init(repeating: .init(), count: services.count + 1)
         var characteristicsBuffers = [[ble_gatt_chr_def]].init(repeating: [], count: services.count)
         var buffers = [[UInt8]]()
+        var valueHandles = [[UInt16]].init(repeating: [], count: services.count)
         for (serviceIndex, service) in services.enumerated() {
             // set type
             cServices[serviceIndex].type = service.isPrimary ? UInt8(BLE_GATT_SVC_TYPE_PRIMARY) : UInt8(BLE_GATT_SVC_TYPE_SECONDARY)
@@ -86,6 +87,7 @@ public struct GATTServer {
             }
             assert(ble_uuid_any_t(cServices[serviceIndex].uuid) == serviceUUID)
             assert(serviceUUID.dataLength == service.uuid.dataLength)
+            var characteristicHandles = [UInt16](repeating: 0, count: service.characteristics.count)
             // add characteristics
             var cCharacteristics = [ble_gatt_chr_def].init(repeating: .init(), count: service.characteristics.count + 1)
             for (characteristicIndex, characteristic) in service.characteristics.enumerated() {
@@ -103,11 +105,17 @@ public struct GATTServer {
                         cCharacteristics[characteristicIndex].uuid = .init(OpaquePointer($0.baseAddress))
                     }
                 }
+                // set handle
+                characteristicHandles[characteristicIndex] = 0x0000
+                characteristicHandles.withUnsafeBufferPointer {
+                    cCharacteristics[characteristicIndex].val_handle = .init(mutating: $0.baseAddress?.advanced(by: characteristicIndex))
+                }
             }
             cCharacteristics.withUnsafeBufferPointer {
                 cServices[serviceIndex].characteristics = $0.baseAddress
             }
             characteristicsBuffers[serviceIndex] = cCharacteristics
+            valueHandles[serviceIndex] = characteristicHandles
         }
         // queue service registration
         try ble_gatts_count_cfg(cServices).throwsError()
@@ -121,14 +129,7 @@ public struct GATTServer {
         self.context.pointee.gattServer.buffers = buffers
         self.context.pointee.gattServer.services = services
         // get handles
-        var serviceHandles = [(UInt16, [UInt16])]()
-        serviceHandles.reserveCapacity(services.count)
-        for (serviceIndex, service) in services.enumerated() {
-            for (characteristicIndex, characteristic) in service.characteristics.enumerated() {
-                characteristicsBuffers[serviceIndex][characteristicIndex].val_handle
-            }
-        }
-        return serviceHandles
+        return valueHandles
     }
     
     /// Removes the service with the specified handle.
