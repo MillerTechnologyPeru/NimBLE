@@ -21,6 +21,13 @@ public struct MemoryBuffer: ~Copyable {
         self.init(pointer, retain: true)
     }
     
+    public init?(pool: borrowing MemoryBuffer.Pool, capacity: UInt16) {
+        guard let pointer = os_mbuf_get(pool.pointer, capacity) else {
+            return nil
+        }
+        self.init(pointer, retain: true)
+    }
+    
     init(_ pointer: UnsafeMutablePointer<os_mbuf>, retain: Bool) {
         self.pointer = pointer
         self.retain = retain
@@ -54,5 +61,17 @@ public struct MemoryBuffer: ~Copyable {
     
     public var count: Int {
         Int(os_mbuf_len(self.pointer))
+    }
+}
+
+public extension MemoryBuffer {
+    
+    struct Pool: ~Copyable {
+        
+        var pointer: UnsafeMutablePointer<os_mbuf_pool>
+        
+        init(_ pointer: UnsafeMutablePointer<os_mbuf_pool>) {
+            self.pointer = pointer
+        }
     }
 }
