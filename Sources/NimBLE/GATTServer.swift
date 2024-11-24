@@ -194,6 +194,7 @@ internal func _ble_gatt_access(
           let accessContext = accessContext else {
         return BLE_ATT_ERR_UNLIKELY
     }
+    let log = context.pointee.log
     switch Int32(accessContext.pointee.op) {
     case BLE_GATT_ACCESS_OP_READ_CHR:
         // read characteristic
@@ -201,9 +202,17 @@ internal func _ble_gatt_access(
             assertionFailure()
             return BLE_ATT_ERR_UNLIKELY
         }
+        log?("Read characteristic \(characteristic.uuid) - Handle \(attributeHandle)")
+        // respond with memory
         var memoryBuffer = MemoryBuffer(accessContext.pointee.om, retain: false)
         memoryBuffer.append(contentsOf: characteristic.value)
+        
     case BLE_GATT_ACCESS_OP_WRITE_CHR:
+        guard let characteristic = context.pointee.gattServer.characteristic(for: attributeHandle) else {
+            assertionFailure()
+            return BLE_ATT_ERR_UNLIKELY
+        }
+        log?("Write characteristic \(characteristic.uuid) - Handle \(attributeHandle)")
         
         break
     default:

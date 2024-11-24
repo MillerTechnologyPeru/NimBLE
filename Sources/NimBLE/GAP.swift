@@ -88,6 +88,16 @@ internal func _gap_callback(event: UnsafeMutablePointer<ble_gap_event>?, context
     case BLE_GAP_EVENT_CONNECT:
         let handle = event.pointee.connect.conn_handle
         log?("Connected - Handle \(handle)")
+    case BLE_GAP_EVENT_DISCONNECT:
+        let handle = event.pointee.connect.conn_handle
+        log?("Disconnected - Handle \(handle)")
+        // resume advertising
+        do {
+            try GAP(context: context).startAdvertising()
+        }
+        catch {
+            log?("Unable to advertise")
+        }
     default:
         break
     }
