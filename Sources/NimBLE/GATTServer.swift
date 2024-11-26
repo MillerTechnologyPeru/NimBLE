@@ -337,6 +337,9 @@ internal extension NimBLE.Context {
         if let error = gattServer.willWrite?(request) {
             throw error
         }
+        // update value
+        let isValidAttribute = gattServer.didWriteCharacteristic(newValue, for: attributeHandle)
+        assert(isValidAttribute)
         // confirmation
         let confirmation = GATTWriteConfirmation(
             central: central,
