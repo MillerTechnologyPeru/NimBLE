@@ -64,6 +64,24 @@ public struct MemoryBuffer: ~Copyable {
     }
 }
 
+public extension [UInt8] {
+    
+    init(_ memoryBuffer: borrowing MemoryBuffer) throws(NimBLEError) {
+        let length = memoryBuffer.count
+        guard length > 0 else {
+            self.init()
+            return
+        }
+        var outLength: UInt16 = 0
+        self.init(repeating: 0, count: length)
+        try self.withUnsafeMutableBytes {
+            ble_hs_mbuf_to_flat(memoryBuffer.pointer, $0.baseAddress, UInt16(length), &outLength)
+        }.throwsError()
+        assert(outLength == length)
+        assert(self.count == length)
+    }
+}
+
 public extension MemoryBuffer {
     
     struct Pool: ~Copyable {

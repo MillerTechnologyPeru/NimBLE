@@ -225,48 +225,199 @@ internal extension GATTServer.Context {
     }
 }
 
+internal extension NimBLE.Context {
+    
+    func readCharacteristic(
+        handle attributeHandle: UInt16,
+        connection: ble_gap_conn_desc,
+        accessContext: borrowing GATTServer.AttributeAccessContext
+    ) throws(ATTError) {
+        guard let characteristic = gattServer.characteristic(for: attributeHandle) else {
+            throw .unlikelyError
+        }
+        let address = BluetoothAddress(bytes: connection.peer_ota_addr.val)
+        assert(address != .zero)
+        log?("[\(address)] Read characteristic \(characteristic.uuid) - Handle 0x\(attributeHandle.toHexadecimal())")
+        let central = Central(id: address)
+        let maximumUpdateValueLength = 20 // TODO: Get MTU
+        let offset = accessContext.offset
+        let data = characteristic.value
+        // ask delegate
+        let request = GATTReadRequest(
+            central: central,
+            maximumUpdateValueLength: maximumUpdateValueLength,
+            uuid: characteristic.uuid,
+            handle: attributeHandle,
+            value: data,
+            offset: offset
+        )
+        if let error = gattServer.willRead?(request) {
+            throw error
+        }
+        // respond with data
+        var memoryBuffer = accessContext.memoryBuffer
+        memoryBuffer.append(contentsOf: data)
+    }
+    
+    func readDescriptor(
+        handle attributeHandle: UInt16,
+        connection: ble_gap_conn_desc,
+        accessContext: borrowing GATTServer.AttributeAccessContext
+    ) throws(ATTError) {
+        guard let descriptor = gattServer.descriptor(for: accessContext.pointer.pointee.dsc) else {
+            throw .unlikelyError
+        }
+        let address = BluetoothAddress(bytes: connection.peer_ota_addr.val)
+        assert(address != .zero)
+        log?("[\(address)] Read descriptor \(descriptor.uuid) - Handle 0x\(attributeHandle.toHexadecimal())")
+        let central = Central(id: address)
+        let maximumUpdateValueLength = 20 // TODO: Get MTU
+        let offset = accessContext.offset
+        let data = descriptor.value
+        // ask delegate
+        let request = GATTReadRequest(
+            central: central,
+            maximumUpdateValueLength: maximumUpdateValueLength,
+            uuid: descriptor.uuid,
+            handle: attributeHandle,
+            value: data,
+            offset: offset
+        )
+        if let error = gattServer.willRead?(request) {
+            throw error
+        }
+        // return data
+        var memoryBuffer = accessContext.memoryBuffer
+        memoryBuffer.append(contentsOf: data)
+    }
+    
+    func writeCharacteristic(
+        handle attributeHandle: UInt16,
+        connection: ble_gap_conn_desc,
+        accessContext: borrowing GATTServer.AttributeAccessContext
+    ) throws(ATTError) {
+        guard let characteristic = gattServer.characteristic(for: attributeHandle),
+              let newValue = try? [UInt8](accessContext.memoryBuffer) else {
+            throw .unlikelyError
+        }
+        let address = BluetoothAddress(bytes: connection.peer_ota_addr.val)
+        assert(address != .zero)
+        log?("[\(address)] Write characteristic \(characteristic.uuid) - Handle 0x\(attributeHandle.toHexadecimal())")
+        let central = Central(id: address)
+        let maximumUpdateValueLength = 20 // TODO: Get MTU
+        let oldValue = characteristic.value
+        
+        // ask delegate
+        let request = GATTWriteRequest(
+            central: central,
+            maximumUpdateValueLength: maximumUpdateValueLength,
+            uuid: characteristic.uuid,
+            handle: attributeHandle,
+            value: oldValue,
+            newValue: newValue
+        )
+        // ask delegate
+        if let error = gattServer.willWrite?(request) {
+            throw error
+        }
+        // confirmation
+        let confirmation = GATTWriteConfirmation(
+            central: central,
+            maximumUpdateValueLength: maximumUpdateValueLength,
+            uuid: characteristic.uuid,
+            handle: attributeHandle,
+            value: newValue
+        )
+        gattServer.didWrite?(confirmation)
+    }
+    
+    func writeDescriptor(
+        handle attributeHandle: UInt16,
+        connection: ble_gap_conn_desc,
+        accessContext: borrowing GATTServer.AttributeAccessContext
+    ) throws(ATTError) {
+        guard let descriptor = gattServer.descriptor(for: accessContext.pointer.pointee.dsc) else {
+            throw .unlikelyError
+        }
+        
+    }
+}
+
 // typedef int ble_gatt_access_fn(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
 internal func _ble_gatt_access(
     connectionHandle: UInt16,
     attributeHandle: UInt16,
-    accessContext: UnsafeMutablePointer<ble_gatt_access_ctxt>?,
+    accessContext accessContextPointer: UnsafeMutablePointer<ble_gatt_access_ctxt>?,
     context contextPointer: UnsafeMutableRawPointer?
 ) -> CInt {
     guard let context = contextPointer?.assumingMemoryBound(to: NimBLE.Context.self),
-          let accessContext = accessContext else {
+          let accessContextPointer = accessContextPointer,
+          let connection = try? GAP(context: context).connection(for: connectionHandle) else {
         return BLE_ATT_ERR_UNLIKELY
     }
-    let log = context.pointee.log
-    let address = (try? GAP(context: context).connection(for: connectionHandle)).map { BluetoothAddress(bytes: $0.peer_ota_addr.val) } ?? .zero
-    switch Int32(accessContext.pointee.op) {
-    case BLE_GATT_ACCESS_OP_READ_CHR:
-        // read characteristic
-        guard let characteristic = context.pointee.gattServer.characteristic(for: attributeHandle) else {
-            assertionFailure()
-            return BLE_ATT_ERR_UNLIKELY
+    let accessContext = GATTServer.AttributeAccessContext(accessContextPointer)
+    do {
+        switch accessContext.operationType {
+        case BLE_GATT_ACCESS_OP_READ_CHR:
+            // read characteristic
+            try context.pointee.readCharacteristic(
+                handle: attributeHandle,
+                connection: connection,
+                accessContext: accessContext
+            )
+            
+        case BLE_GATT_ACCESS_OP_WRITE_CHR:
+            try context.pointee.writeCharacteristic(
+                handle: attributeHandle,
+                connection: connection,
+                accessContext: accessContext
+            )
+        case BLE_GATT_ACCESS_OP_READ_DSC:
+            // read descriptor
+            try context.pointee.readDescriptor(
+                handle: attributeHandle,
+                connection: connection,
+                accessContext: accessContext
+            )
+        case BLE_GATT_ACCESS_OP_WRITE_DSC:
+            try context.pointee.writeDescriptor(
+                handle: attributeHandle,
+                connection: connection,
+                accessContext: accessContext
+            )
+        default:
+            assertionFailure("Unknown operation 0x\(accessContext.operationType.toHexadecimal())")
+            return CInt(ATTError.unlikelyError.rawValue)
         }
-        log?("[\(address)] Read characteristic \(characteristic.uuid) - Handle \(attributeHandle.toHexadecimal())")
-        // respond with memory
-        var memoryBuffer = MemoryBuffer(accessContext.pointee.om, retain: false)
-        memoryBuffer.append(contentsOf: characteristic.value)
-        
-    case BLE_GATT_ACCESS_OP_WRITE_CHR:
-        guard let characteristic = context.pointee.gattServer.characteristic(for: attributeHandle) else {
-            assertionFailure()
-            return BLE_ATT_ERR_UNLIKELY
-        }
-        log?("[\(address)] Write characteristic \(characteristic.uuid) - Handle \(attributeHandle.toHexadecimal())")
-        break
-    case BLE_GATT_ACCESS_OP_READ_DSC:
-        guard let descriptor = context.pointee.gattServer.descriptor(for: accessContext.pointee.dsc) else {
-            assertionFailure()
-            return BLE_ATT_ERR_UNLIKELY
-        }
-        log?("[\(address)] Read descriptor \(descriptor.uuid) - Handle \(attributeHandle.toHexadecimal())")
-        var memoryBuffer = MemoryBuffer(accessContext.pointee.om, retain: false)
-        memoryBuffer.append(contentsOf: descriptor.value)
-    default:
-        break
+    }
+    catch {
+        return CInt(error.rawValue)
     }
     return 0
+}
+
+// MARK: - Supporting Types
+
+internal extension GATTServer {
+    
+    struct AttributeAccessContext: ~Copyable {
+        
+        let pointer: UnsafeMutablePointer<ble_gatt_access_ctxt>
+        
+        init(_ pointer: UnsafeMutablePointer<ble_gatt_access_ctxt>) {
+            self.pointer = pointer
+        }
+        
+        var memoryBuffer: MemoryBuffer {
+            MemoryBuffer(pointer.pointee.om, retain: false)
+        }
+        
+        var offset: Int {
+            Int(pointer.pointee.offset)
+        }
+        
+        var operationType: Int32 {
+            Int32(pointer.pointee.op)
+        }
+    }
 }
